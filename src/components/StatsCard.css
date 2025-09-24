@@ -1,0 +1,9 @@
+.stat-card {
+  background-color: white;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  font-size: 16px;
+  flex: 1;
+  text-align: center;
+}
