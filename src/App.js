@@ -138,7 +138,6 @@ import AddAllotment from "./pages/AddAllotment";
 import MyPatients from "./pages/MyPatients";
 import ICUPatients from "./pages/ICUPatients";
 import AdminPanel from "./pages/AdminPanel";
-import AllComments from "./pages/AllComments";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Header from "./components/Header";
