@@ -19,7 +19,6 @@
 
 import { initializeApp } from "firebase/app";
 import { collection, getDocs, getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB5AGFlycGru4SD8BzJvVv_v7ueGUPvZS4",
@@ -33,7 +32,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 export const db = getFirestore(app);
-export const auth = getAuth(app);
 export const fetchData = async () => {
   const querySnapshot = await getDocs(collection(db, "patients"));
   return querySnapshot.docs.map(doc => doc.data());

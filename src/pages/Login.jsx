@@ -1,21 +1,17 @@
 import React, { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../firebase/config';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate('/');
-    } catch (err) {
-      alert(err.message);
-    }
+    login(email, password);
+    navigate('/');
   };
 
   return (
@@ -30,6 +26,9 @@ function Login() {
         <h3 className="text-center mb-4" style={{ fontWeight: "600" }}>
           Login
         </h3>
+        <p className="text-center text-muted small mb-4">
+          Demo mode: any email and password will work.
+        </p>
         
         <form onSubmit={handleSubmit}>
           <div className="mb-3">

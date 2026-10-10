@@ -1,220 +1,69 @@
-// import React, { useContext, useEffect, useState } from "react";
-// import { auth } from "../firebase/config";
-// import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import React, { useContext, useState } from "react";
 
-// const AuthContext = React.createContext();
+const AuthContext = React.createContext(null);
+const SESSION_KEY = "patient-care-demo-session";
 
-// export function useAuth() {
-//   return useContext(AuthContext);
-// }
+function readSavedSession() {
+  try {
+    const savedSession = window.localStorage.getItem(SESSION_KEY);
+    return savedSession ? JSON.parse(savedSession) : null;
+  } catch {
+    return null;
+  }
+}
 
-// export function AuthProvider({ children }) {
-//   const [currentUser, setCurrentUser] = useState();
-
-//   function signup(email, password) {
-//     return createUserWithEmailAndPassword(auth, email, password);
-//   }
-
-//   function login(email, password) {
-//     return signInWithEmailAndPassword(auth, email, password);
-//   }
-
-//   function logout() {
-//     return signOut(auth);
-//   }
-
-//   useEffect(() => {
-//     const unsubscribe = onAuthStateChanged(auth, user => {
-//       setCurrentUser(user);
-//     });
-
-//     return unsubscribe;
-//   }, []);
-
-//   const value = {
-//     currentUser,
-//     signup,
-//     login,
-//     logout,
-//   };
-
-//   return (
-//     <AuthContext.Provider value={value}>
-//       {children}
-//     </AuthContext.Provider>
-//   );
-// }
-
-
-// import React, { useContext, useEffect, useState } from "react";
-// import { auth, db } from "../firebase/config";
-// import {
-//   createUserWithEmailAndPassword,
-//   signInWithEmailAndPassword,
-//   signOut,
-//   onAuthStateChanged,
-// } from "firebase/auth";
-// import { doc, setDoc, getDoc } from "firebase/firestore";
-
-// const AuthContext = React.createContext();
-
-// export function useAuth() {
-//   return useContext(AuthContext);
-// }
-
-// export function AuthProvider({ children }) {
-//   const [currentUser, setCurrentUser] = useState();
-//   const [userData, setUserData] = useState(); // Firestore user data
-//   const [loading, setLoading] = useState(true);
-
-//   async function signup(email, password, role = "user", icuId = null) {
-//     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-//     // Add user data to Firestore
-//     await setDoc(doc(db, "users", userCredential.user.uid), {
-//       email,
-//       role,
-//       icuId,
-//     });
-//     return userCredential;
-//   }
-
-//   function login(email, password) {
-//     return signInWithEmailAndPassword(auth, email, password);
-//   }
-
-//   function logout() {
-//     setUserData(null);
-//     return signOut(auth);
-//   }
-
-//   useEffect(() => {
-//     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-//       setCurrentUser(user);
-//       if (user) {
-//         const docSnap = await getDoc(doc(db, "users", user.uid));
-//         if (docSnap.exists()) {
-//           setUserData(docSnap.data());
-//         } else {
-//           setUserData(null);
-//         }
-//       } else {
-//         setUserData(null);
-//       }
-//       setLoading(false);
-//     });
-
-//     return unsubscribe;
-//   }, []);
-
-//   const value = {
-//     currentUser,
-//     userData,
-//     signup,
-//     login,
-//     logout,
-//   };
-
-//   return (
-//     <AuthContext.Provider value={value}>
-//       {!loading && children}
-//     </AuthContext.Provider>
-//   );
-// }
-
-
-
-
-import React, { useContext, useEffect, useState } from "react";
-import { auth, db } from "../firebase/config";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-} from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
-
-const AuthContext = React.createContext();
+function makeDemoUser(email, role = "doctor", icuId = null) {
+  return {
+    uid: `demo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    email: email.trim().toLowerCase(),
+    role,
+    icuId,
+  };
+}
 
 export function useAuth() {
   return useContext(AuthContext);
 }
 
 export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(readSavedSession);
 
-  async function signup(email, password, role = "user", icuId = null) {
+  function startDemoSession(nextUser) {
+    setUser(nextUser);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await setDoc(doc(db, "users", userCredential.user.uid), {
-        email,
-        role,
-        icuId,
-      });
-      return userCredential;
-    } catch (error) {
-      console.error("Signup error:", error);
-      throw error;
+      window.localStorage.setItem(SESSION_KEY, JSON.stringify(nextUser));
+    } catch {
+      // The session still works until the page is refreshed if storage is unavailable.
     }
+    return { user: nextUser };
   }
 
-  function login(email, password) {
-    return signInWithEmailAndPassword(auth, email, password);
+  function signup(email, _password, role = "doctor", icuId = null) {
+    return startDemoSession(makeDemoUser(email, role, icuId));
+  }
+
+  function login(email, _password) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const savedUser = user?.email === normalizedEmail ? user : null;
+    return startDemoSession(savedUser || makeDemoUser(normalizedEmail));
   }
 
   function logout() {
-    setUserData(null);
-    return signOut(auth);
+    setUser(null);
+    try {
+      window.localStorage.removeItem(SESSION_KEY);
+    } catch {
+      // Ignore storage errors; the in-memory session is already cleared.
+    }
   }
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      if (user) {
-        try {
-          const docSnap = await getDoc(doc(db, "users", user.uid));
-          if (docSnap.exists()) {
-            // Combine user uid + Firestore data
-            setUserData({
-              uid: user.uid,
-              email: user.email,
-              ...docSnap.data(),
-            });
-          } else {
-            console.warn("No user data found in Firestore for:", user.uid);
-            setUserData({
-              uid: user.uid,
-              email: user.email,
-              role: null,
-              icuId: null,
-            });
-          }
-        } catch (err) {
-          console.error("Error fetching user data:", err);
-          setUserData(null);
-        }
-      } else {
-        setUserData(null);
-      }
-      setLoading(false);
-    });
-
-    return unsubscribe;
-  }, []);
-
   const value = {
-    currentUser,
-    userData,
+    currentUser: user,
+    userData: user,
     signup,
     login,
     logout,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {loading ? <div>Loading user...</div> : children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

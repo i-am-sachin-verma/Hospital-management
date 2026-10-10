@@ -1,28 +1,18 @@
 import React, { useState } from 'react';
-import { auth, db } from '../firebase/config';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { setDoc, doc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('doctor');
   const navigate = useNavigate();
+  const { signup } = useAuth();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    try {
-      const userCred = await createUserWithEmailAndPassword(auth, email, password);
-      await setDoc(doc(db, 'users', userCred.user.uid), {
-        email,
-        role,
-        icuId: role === 'icu_head' ? '' : null
-      });
-      navigate('/');
-    } catch (err) {
-      alert(err.message);
-    }
+    signup(email, password, role, role === 'icu_head' ? '' : null);
+    navigate('/');
   };
 
   return (
@@ -37,6 +27,9 @@ function Signup() {
         <h3 className="text-center mb-4" style={{ fontWeight: "600" }}>
           Signup
         </h3>
+        <p className="text-center text-muted small mb-4">
+          Demo mode: create a profile with any email and password.
+        </p>
 
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
